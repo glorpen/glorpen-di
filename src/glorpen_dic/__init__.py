@@ -83,8 +83,10 @@ class Container(object):
         try:
             o.__uses_di
         except:
+            # remove only if no-DI aware method, other DI are ok
             di = kwargs.pop("__di__", None)
         else:
+            # check if this is out instance, or related - if not, pass 
             if self._is_related(o.__uses_di):
                 di = kwargs.get("__di__", None)
         
