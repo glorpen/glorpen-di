@@ -7,17 +7,8 @@ import inspect
 import functools
 
 """
-constructor injection
-setter injection
-property injection
 setting parameters
 getting parameters
-
-factory
-service configurator
-
-service tags
-
 
 Why not XML:
     XML is bad(tm)
@@ -50,17 +41,23 @@ def normalize_name(o):
     raise Exception("Unknown object: %r" % o)
 
 class Deffered(object):
-    def __init__(self, service, method=None):
+    def __init__(self, service=None, method=None, param=None):
         super(Deffered, self).__init__()
         self.service = service
         self.method = method
+        self.param = param
     
-    def resolve(self, getter):
-        svc = getter(self.service)
-        if self.method:
-            return getattr(svc, self.method)
-        else:
-            return svc
+    def resolve(self, getter, param_getter):
+        if self.service:
+            svc = getter(self.service)
+            if self.method:
+                return getattr(svc, self.method)
+            else:
+                return svc
+        if self.param:
+            return param_getter(self.param)
+        
+        raise Exception()
 
 class Service(object):
     
@@ -85,11 +82,11 @@ class Service(object):
         if callable(name):
             self._impl = name
     
-    def _deffer(self, ret=None, svc=None, method=None):
+    def _deffer(self, ret=None, svc=None, method=None, param=None):
         if not ret is None:
             return ret
-        elif svc:
-            return Deffered(service=svc, method=method)
+        elif svc or param:
+            return Deffered(service=svc, method=method, param=param)
     
     @fluid
     def implementation(self, fun):
@@ -104,6 +101,8 @@ class Service(object):
         for k,v in kwargs.items():
             if k.endswith("__svc"):
                 kw[k[:-5]] = self._deffer(svc=v)
+            elif k.endswith("__param"):
+                kw[k[:-7]] = self._deffer(param=v)
             else:
                 kw[k]=v
         return kw
@@ -139,6 +138,7 @@ class Container(object):
     def __init__(self):
         super(Container, self).__init__()
         self.services = {}
+        self.parameters = {}
         
         self.set_scope_hierarchy(ScopeSingleton, ScopePrototype)
         
@@ -162,8 +162,17 @@ class Container(object):
         self.services[s.name] = s
         return s
     
+    def add_parameter(self, name, value):
+        self.parameters[name] = value
+    
     def get(self, svc):
         return self._get(svc)
+    
+    def get_parameter(self, name):
+        if name in self.parameters:
+            return self.parameters[name]
+        else:
+            raise UnknownServiceException(name)
     
     def _get(self, svc, requester_chain=None):
         name = normalize_name(svc)
@@ -190,7 +199,7 @@ class Container(object):
         
         def resolver(value):
             if isinstance(value, Deffered):
-                return value.resolve(lambda name:self._get(name, requester_chain + [s_def]))
+                return value.resolve(lambda name:self._get(name, requester_chain + [s_def]), self.get_parameter)
             else:
                 return value
         

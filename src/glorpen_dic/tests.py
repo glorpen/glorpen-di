@@ -117,5 +117,15 @@ class Test(unittest.TestCase):
         
         self.assertEqual(c.get(MyClass).a, "a")
     
+    def testParameters(self):
+        class MyClass(object):
+            a="b"
+        
+        c = Container()
+        c.add_parameter("a", "asd")
+        c.add_service(MyClass).set(a__param="a")
+        
+        self.assertEqual(c.get(MyClass).a, "asd")
+    
 if __name__ == "__main__":
     unittest.main()
