@@ -75,6 +75,7 @@ class Service(object):
         super(Service, self).__init__()
         
         self._kwargs = {}
+        self._sets = {}
         self._calls = []
         self._configurators = []
         self._args_configurators = []
@@ -114,6 +115,10 @@ class Service(object):
     @fluid
     def call(self, method, **kwargs):
         self._calls.append((method, self._normalize_kwargs(kwargs)))
+    
+    @fluid
+    def set(self, **kwargs):
+        self._sets.update(self._normalize_kwargs(kwargs))
 
     @fluid
     def configurator(self, service=None, method=None, args_method=None, callable=None, args_callable=None):
@@ -214,58 +219,10 @@ class Container(object):
         for conf in s_def._configurators:
             resolver(conf)(instance)
         
+        for k,v in resolve_kwargs(s_def._sets).items():
+            setattr(instance, k, v)
+        
         for call_method, call_kwargs in s_def._calls:
             getattr(instance, call_method)(**resolve_kwargs(call_kwargs))
         
         return instance
-
-if __name__ == "__main__":
-    
-    class MyConfigurator(object):
-        
-        def configure(self, o):
-            pass
-        
-        def configure_args(self, kwargs):
-            kwargs["o"] = "configured o"
-    
-    class MyClass(object):
-        
-        def __init__(self, o):
-            super(MyClass, self).__init__()
-        
-        def asd(self):
-            pass
-    
-    class CreatedClass(object):
-        
-        def __init__(self, string_a):
-            super(CreatedClass, self).__init__()
-            self.string_a = string_a
-        
-        def set_info(self, num, a):
-            self.num = num
-            self.a = a
-        def print_info(self):
-            print(self.num, self.a, self.string_a)
-    
-    class MyFactory(object):
-        
-        def get_my_instance(self, **kwargs):
-            return CreatedClass(**kwargs)
-    
-    
-    c = Container()
-    
-    c.add_service(MyFactory)
-    c.add_service(CreatedClass)\
-        .factory(service=MyFactory, method="get_my_instance")\
-        .kwargs(string_a="a")\
-        .call("set_info", a__svc=MyClass, num=1)
-    
-    c.add_service(MyConfigurator)
-    c.add_service(MyClass)\
-        .configurator(service=MyConfigurator, method="configure", args_method="configure_args")\
-    
-    
-    c.get(CreatedClass).print_info()

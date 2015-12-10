@@ -6,134 +6,116 @@ Created on 9 gru 2015
 import unittest
 
 from glorpen_dic import Container
+from glorpen_dic.scopes import ScopeSingleton, ScopePrototype
+from glorpen_dic.exceptions import ScopeWideningException,\
+    UnknownServiceException
 
 class Test(unittest.TestCase):
     
-    def testSimpleKeysAndValues(self):
+    def testConfigurator(self):
         c = Container()
         
-        d = {
-            "string": "value",
-            "integer": 3,
-            "dict": {"A":1}
-        }
+        class MyConfigurator(object):
+            def configure(self, o):
+                o.configured = True
+            
+            def configure_args(self, kwargs):
+                kwargs["o"] = "configured o"
         
-        for k,v in d.items():
-            c.parameter(k, v)
-            self.assertIs(c.get(k), v)
-    
-    def testClasses(self):
-        c = Container()
-        
-        @c.provide_class
         class MyClass(object):
-            pass
-        
-        self.assertIsInstance(c.get(MyClass), MyClass)
-    
-    def testParams(self):
-        c = Container()
-        c.parameter("string", "a")
-        
-        @c.provide_class
-        class MyClass(object):
-            @c.params(a="string")
-            def __init__(self, a):
+            
+            configured = False
+            
+            def __init__(self, o):
                 super(MyClass, self).__init__()
-                self.a = a
+                self.o = o
             
-            @c.params(a="string")
-            def method(self, a):
-                return a, self.a
+            def is_configured(self):
+                return self.configured
             
-        self.assertIsInstance(c.get(MyClass), MyClass)
-        self.assertEqual(c.get(MyClass).method(), ("a", "a"))
-    
-    def testProperty(self):
-        c= Container()
+        c.add_service(MyConfigurator)
+        c.add_service(MyClass)\
+            .configurator(service=MyConfigurator, method="configure", args_method="configure_args")
         
-        c.parameter("string1", "a")
-        c.parameter("string2", "b")
-        
-        @c.provide_class
-        class Producer(object):
-            
-            prop = c.property("string1")
-            
-            @c.params(init_value="string1")
-            def __init__(self, init_value):
-                super(Producer, self).__init__()
-                self.init_value = init_value
-            
-            @c.params(v="string2")
-            def p(self, v):
-                return self.init_value, v
-            
-        Producer("a").p("q")
-        self.assertEqual(c.get(Producer).p(), ('a','b'))
-        self.assertEqual(c.get(Producer).prop, "a")
+        o = c.get(MyClass)
+        self.assertEqual(o.o, "configured o", "configure object")
+        self.assertTrue(o.is_configured(), "configure constructor kwargs")
     
-    def testMethodProvider(self):
+    def testFactory(self):
+    
+        class CreatedClass(object):
+            def __init__(self, string_a):
+                super(CreatedClass, self).__init__()
+                self.string_a = string_a
+            
+        class MyFactory(object):
+            def get_my_instance(self, **kwargs):
+                return CreatedClass(**kwargs)
+    
         c = Container()
         
-        @c.provide_class
-        class Producer(object):
-            @c.provide_method
-            def p(self):
-                return "q"
+        c.add_service(MyFactory)
+        c.add_service(CreatedClass)\
+            .factory(service=MyFactory, method="get_my_instance")\
+            .kwargs(string_a="a")
         
-        self.assertEqual(c.get(Producer.p), "q")
+        o = c.get(CreatedClass)
+        self.assertIsInstance(o, CreatedClass)
+        self.assertEqual(o.string_a, "a", "factory method arguments")
     
-    def testFunctionProvider(self):
+    def testConstructorArguments(self):
+        class MyClass(object):
+            def __init__(self, o):
+                super(MyClass, self).__init__()
+                self.o = o
         c = Container()
+        c.add_service(MyClass).kwargs(o="a")
         
-        @c.provide_function
-        def f():
-            return "a"
-        
-        self.assertEqual(c.get(f), "a")
+        self.assertEqual(c.get(MyClass).o, "a")
     
-    def testResultConfigurator(self):
+    def testSingletonScope(self):
+        class MyClass(object): pass
+        
         c = Container()
+        c.add_service(MyClass).scope(ScopeSingleton)
         
-        @c.provide_function
-        def f():
-            return {}
-        
-        @c.configure_result(f)
-        def configure(res):
-            res["a"]="a"
-        
-        self.assertEqual(c.get(f), {"a":"a"})
+        self.assertIs(c.get(MyClass), c.get(MyClass), "instances are the same")
     
-    def testArgsConfigurator(self):
+    def testPrototypeScope(self):
+        class MyClass(object): pass
+        
         c = Container()
+        c.add_service(MyClass).scope(ScopePrototype)
         
-        @c.provide_function
-        def f(a="a"):
-            return a
-        
-        @c.configure_kwargs(f)
-        def configure(kwargs):
-            kwargs["a"] = "b"
-        
-        self.assertEqual(c.get(f), "b")
+        self.assertIsNot(c.get(MyClass), c.get(MyClass), "instances are not the same")
     
-    def multipleDis(self):
-        a = Container()
-        a.parameter("string", "a")
-        b = Container()
-        b.parameter("string", "b")
+    def testScopeWidening(self):
+        class MyClassA(object): pass
+        class MyClassB(object):
+            def __init__(self, a):
+                super(MyClassB, self).__init__()
         
-        @a.provide_function
-        @b.provide_function
-        @a.params(v="string")
-        @b.params(v="string")
-        def f(v):
-            return v
+        c = Container()
+        c.add_service(MyClassA).scope(ScopePrototype)
+        c.add_service(MyClassB).scope(ScopeSingleton)\
+            .kwargs(a__svc=MyClassA)
         
-        self.assertEqual(a.get(f), "a")
-        self.assertEqual(b.get(f), "b")
-
+        with self.assertRaises(ScopeWideningException, msg="error on scope widening"):
+            c.get(MyClassB)
+    
+    def testGettingNotExisitingService(self):
+        c = Container()
+        with self.assertRaises(UnknownServiceException):
+            c.get(str)
+        
+    def testSetters(self):
+        class MyClass(object):
+            a="b"
+        
+        c = Container()
+        c.add_service(MyClass).set(a="a")
+        
+        self.assertEqual(c.get(MyClass).a, "a")
+    
 if __name__ == "__main__":
     unittest.main()
