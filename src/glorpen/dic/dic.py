@@ -93,8 +93,8 @@ class Service(object):
     def _lazy_import(self, path):
         module, cls = path.rsplit(".", 1)
         @functools.wraps(self._lazy_import)
-        def wrapper():
-            return getattr(importlib.import_module(module), cls)
+        def wrapper(*args, **kwargs):
+            return getattr(importlib.import_module(module), cls)(*args, **kwargs)
         return wrapper
     
     def _deffer(self, ret=None, svc=None, method=None, param=None):
