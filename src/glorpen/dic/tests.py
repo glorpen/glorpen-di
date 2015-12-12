@@ -144,5 +144,10 @@ class Test(unittest.TestCase):
         with self.assertRaises(ServiceAlreadyCreated):
             svc.set(a="a")
     
+    def testServiceWithImport(self):
+        c = Container()
+        svc = c.add_service('unittest.case.TestCase')
+        c.get(unittest.TestCase)
+    
 if __name__ == "__main__":
     unittest.main()

@@ -5,6 +5,7 @@ Created on 10 gru 2015
 '''
 import inspect
 import functools
+import importlib
 
 """
 Why not XML:
@@ -70,7 +71,7 @@ class Service(object):
     
     _frozen = False
     
-    def __init__(self, name):
+    def __init__(self, name, impl=None):
         super(Service, self).__init__()
         
         self._kwargs = {}
@@ -81,18 +82,26 @@ class Service(object):
         
         self.name = normalize_name(name)
         
-        if callable(name):
-            self._impl = name
+        if impl:
+            self._impl = impl
+        else:
+            if callable(name):
+                self._impl = name
+            else:
+                self._impl = self._lazy_import(name)
+    
+    def _lazy_import(self, path):
+        module, cls = path.rsplit(".", 1)
+        @functools.wraps(self._lazy_import)
+        def wrapper():
+            return getattr(importlib.import_module(module), cls)
+        return wrapper
     
     def _deffer(self, ret=None, svc=None, method=None, param=None):
         if not ret is None:
             return ret
         elif svc or param:
             return Deffered(service=svc, method=method, param=param)
-    
-    @fluid
-    def implementation(self, fun):
-        self._impl = fun
     
     @fluid
     def factory(self, service=None, method=None, callable=None):
