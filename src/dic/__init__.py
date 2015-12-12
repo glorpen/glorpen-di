@@ -6,4 +6,5 @@ Created on 9 gru 2015
 
 from .dic import Container
 
-__all__ = ['Container']
+__version__ = "0.1"
+__all__ = ['Container', "__version__"]

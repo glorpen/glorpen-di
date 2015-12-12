@@ -7,9 +7,6 @@ import inspect
 import functools
 
 """
-setting parameters
-getting parameters
-
 Why not XML:
     XML is bad(tm)
 
