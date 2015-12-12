@@ -18,8 +18,8 @@ Why not annotations:
 
 """
 
-from .exceptions import UnknownScopeException, UnknownServiceException, ScopeWideningException, ServiceAlreadyCreated
-from .scopes import ScopePrototype, ScopeSingleton, ScopeBase
+from glorpen.dic.exceptions import UnknownScopeException, UnknownServiceException, ScopeWideningException, ServiceAlreadyCreated
+from glorpen.dic.scopes import ScopePrototype, ScopeSingleton, ScopeBase
 
 def fluid(f):
     functools.wraps(f)
