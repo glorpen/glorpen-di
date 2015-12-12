@@ -19,7 +19,8 @@ Why not annotations:
 
 """
 
-from glorpen.dic.exceptions import UnknownScopeException, UnknownServiceException, ScopeWideningException, ServiceAlreadyCreated
+from glorpen.dic.exceptions import UnknownScopeException, UnknownServiceException, ScopeWideningException, ServiceAlreadyCreated,\
+    ContainerException
 from glorpen.dic.scopes import ScopePrototype, ScopeSingleton, ScopeBase
 
 def fluid(f):
@@ -66,12 +67,15 @@ class Service(object):
     SCOPE_PROTOTYPE = 'prototype'
     
     _impl = None
+    _impl_getter = None
+    
     _factory = None
     _scope = ScopeSingleton
+    _load_signature = False
     
     _frozen = False
     
-    def __init__(self, name, impl=None):
+    def __init__(self, name_or_impl, impl=None):
         super(Service, self).__init__()
         
         self._kwargs = {}
@@ -80,21 +84,30 @@ class Service(object):
         self._configurators = []
         self._args_configurators = []
         
-        self.name = normalize_name(name)
+        self.name = normalize_name(name_or_impl)
         
         if impl:
             self._impl = impl
         else:
-            if callable(name):
-                self._impl = name
+            if callable(name_or_impl):
+                self._impl = name_or_impl
             else:
-                self._impl = self._lazy_import(name)
+                self._impl_getter = self._lazy_import(name_or_impl)
+    
+    def _get_implementation(self):
+        if self._impl:
+            return self._impl
+        if self._impl_getter:
+            self._impl = self._impl_getter()
+            return self._impl
+        
+        raise ContainerException("Bad implementation argument for %r service" % self.name)
     
     def _lazy_import(self, path):
         module, cls = path.rsplit(".", 1)
         @functools.wraps(self._lazy_import)
         def wrapper(*args, **kwargs):
-            return getattr(importlib.import_module(module), cls)(*args, **kwargs)
+            return getattr(importlib.import_module(module), cls)
         return wrapper
     
     def _deffer(self, ret=None, svc=None, method=None, param=None):
@@ -124,7 +137,11 @@ class Service(object):
     
     @fluid
     def call(self, method, **kwargs):
-        self._calls.append((method, self._normalize_kwargs(kwargs)))
+        self._calls.append((False, method, self._normalize_kwargs(kwargs)))
+    
+    @fluid
+    def call_with_signature(self, method, **kwargs):
+        self._calls.append((True, method, self._normalize_kwargs(kwargs)))
     
     @fluid
     def set(self, **kwargs):
@@ -136,6 +153,11 @@ class Service(object):
             self._configurators.append(self._deffer(svc=service, method=method, ret=callable))
         if args_method or args_callable:
             self._args_configurators.append(self._deffer(svc=service, method=args_method, ret=args_callable))
+
+    @fluid
+    def kwargs_from_signature(self):
+        """adds arguments found in class signature, based on provided function hints"""
+        self._load_signature = True
 
     @fluid
     def scope(self, scope_cls):
@@ -231,6 +253,18 @@ class Container(object):
         
         return self.scopes[scope_index].get(service_creator, name)
     
+    def _update_kwargs_from_signature(self, function, kwargs):
+        sig = inspect.signature(function)
+        for name, param in tuple(sig.parameters.items()):
+            if name == "self":
+                continue
+            if param.annotation is inspect.Parameter.empty:
+                continue
+            n = normalize_name(param.annotation)
+            if n in self.services:
+                kwargs.setdefault(name, Deffered(service=n))
+        
+    
     def _create(self, s_def, resolver):
         
         s_def._frozen = True
@@ -241,9 +275,11 @@ class Container(object):
         if s_def._factory:
             cls = resolver(s_def._factory)
         else:
-            cls = s_def._impl
+            cls = s_def._get_implementation()
         
-        kwargs = resolve_kwargs(s_def._kwargs)
+        kwargs = dict(s_def._kwargs)
+        self._update_kwargs_from_signature(cls.__init__, kwargs)
+        kwargs = resolve_kwargs(kwargs)
         
         for conf in s_def._args_configurators:
             resolver(conf)(kwargs)
@@ -256,7 +292,11 @@ class Container(object):
         for k,v in resolve_kwargs(s_def._sets).items():
             setattr(instance, k, v)
         
-        for call_method, call_kwargs in s_def._calls:
-            getattr(instance, call_method)(**resolve_kwargs(call_kwargs))
+        for use_sig, call_method, call_kwargs in s_def._calls:
+            callable = getattr(instance, call_method)
+            kwargs = dict(call_kwargs)
+            if use_sig:
+                self._update_kwargs_from_signature(callable, kwargs)
+            callable(**resolve_kwargs(kwargs))
         
         return instance

@@ -147,11 +147,33 @@ class Test(unittest.TestCase):
     def testServiceWithImport(self):
         c = Container()
         c.add_service('unittest.case.TestCase')
-        c.get(unittest.TestCase)
+        self.assertIsInstance(c.get(unittest.TestCase), unittest.TestCase)
     
     def testSelfService(self):
         c = Container()
         self.assertIs(c.get(Container), c)
+    
+    def testSignature(self):
+        c = Container()
+        
+        class ParamClass(object): pass
+        class MyClass(object):
+            t = None
+            m = None
+            def __init__(self, t: ParamClass, a: str=None):
+                super(MyClass, self).__init__()
+                self.t = t
+            
+            def method(self, t: ParamClass):
+                self.m = t
+        
+        c.add_service(ParamClass)
+        c.add_service(MyClass)\
+            .kwargs_from_signature()\
+            .call_with_signature("method")
+        
+        self.assertIsInstance(c.get(MyClass).t, ParamClass)
+        self.assertIsInstance(c.get(MyClass).m, ParamClass)
     
 if __name__ == "__main__":
     unittest.main()
