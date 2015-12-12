@@ -151,6 +151,8 @@ class Container(object):
         self.services = {}
         self.parameters = {}
         
+        self.self_service_name = normalize_name(self.__class__)
+        
         self.set_scope_hierarchy(ScopeSingleton, ScopePrototype)
         
     def set_scope_hierarchy(self, *scopes):
@@ -194,6 +196,9 @@ class Container(object):
     
     def _get(self, svc, requester_chain=None):
         name = normalize_name(svc)
+        
+        if name == self.self_service_name:
+            return self
         
         if not name in self.services:
             raise UnknownServiceException(name)

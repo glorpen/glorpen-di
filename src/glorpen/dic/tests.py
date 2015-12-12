@@ -146,8 +146,12 @@ class Test(unittest.TestCase):
     
     def testServiceWithImport(self):
         c = Container()
-        svc = c.add_service('unittest.case.TestCase')
+        c.add_service('unittest.case.TestCase')
         c.get(unittest.TestCase)
+    
+    def testSelfService(self):
+        c = Container()
+        self.assertIs(c.get(Container), c)
     
 if __name__ == "__main__":
     unittest.main()
