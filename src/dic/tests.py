@@ -5,10 +5,10 @@ Created on 9 gru 2015
 '''
 import unittest
 
-from glorpen_dic import Container
-from glorpen_dic.scopes import ScopeSingleton, ScopePrototype
-from glorpen_dic.exceptions import ScopeWideningException,\
-    UnknownServiceException
+from .dic import Container
+from .scopes import ScopeSingleton, ScopePrototype
+from .exceptions import ScopeWideningException,\
+    UnknownServiceException, ServiceAlreadyCreated
 
 class Test(unittest.TestCase):
     
@@ -126,6 +126,23 @@ class Test(unittest.TestCase):
         c.add_service(MyClass).set(a__param="a")
         
         self.assertEqual(c.get(MyClass).a, "asd")
+    
+    def testServiceChanging(self):
+        class MyClass(object): pass
+        
+        c = Container()
+        svc = c.add_service(MyClass)
+        
+        svc.set(a="a")
+        svc.set(b="b")
+        svc.set(a="c")
+        
+        o = c.get(MyClass)
+        self.assertEqual(o.a, "c")
+        self.assertEqual(o.b, "b")
+        
+        with self.assertRaises(ServiceAlreadyCreated):
+            svc.set(a="a")
     
 if __name__ == "__main__":
     unittest.main()

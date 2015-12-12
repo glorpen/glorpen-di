@@ -18,14 +18,17 @@ Why not annotations:
 
 """
 
-from .exceptions import UnknownScopeException, UnknownServiceException, ScopeWideningException
+from .exceptions import UnknownScopeException, UnknownServiceException, ScopeWideningException, ServiceAlreadyCreated
 from .scopes import ScopePrototype, ScopeSingleton, ScopeBase
 
 def fluid(f):
     functools.wraps(f)
-    def wrapper(*args, **kwargs):
-        f(*args, **kwargs)
-        return args[0]
+    def wrapper(self, *args, **kwargs):
+        if self._frozen:
+            raise ServiceAlreadyCreated(self.name)
+        else:
+            f(self, *args, **kwargs)
+        return self
     return wrapper
 
 def normalize_name(o):
@@ -64,6 +67,8 @@ class Service(object):
     _impl = None
     _factory = None
     _scope = ScopeSingleton
+    
+    _frozen = False
     
     def __init__(self, name):
         super(Service, self).__init__()
@@ -126,7 +131,7 @@ class Service(object):
     @fluid
     def scope(self, scope_cls):
         self._scope = scope_cls
-
+    
 class Container(object):
     
     scopes_cls = []
@@ -171,6 +176,13 @@ class Container(object):
         else:
             raise UnknownServiceException(name)
     
+    def get_definition(self, svc):
+        name = normalize_name(svc)
+        if not name in self.services:
+            raise UnknownServiceException(name)
+        
+        return self.services[name]
+    
     def _get(self, svc, requester_chain=None):
         name = normalize_name(svc)
         
@@ -206,6 +218,8 @@ class Container(object):
         return self.scopes[scope_index].get(service_creator, name)
     
     def _create(self, s_def, resolver):
+        
+        s_def._frozen = True
         
         def resolve_kwargs(kwargs):
             return dict([(k, resolver(v)) for k,v in kwargs.items()])
