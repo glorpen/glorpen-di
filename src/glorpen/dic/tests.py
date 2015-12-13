@@ -1,7 +1,7 @@
-'''
-Created on 9 gru 2015
+'''Tests for package.
 
-@author: Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>
+.. moduleauthor:: Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>
+
 '''
 import unittest
 

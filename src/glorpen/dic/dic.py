@@ -1,30 +1,21 @@
 '''
-Created on 10 gru 2015
 
-@author: Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>
+.. moduleauthor:: Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>
+
 '''
 import inspect
 import functools
 import importlib
 
-"""
-Why not XML:
-    XML is bad(tm)
-
-Why not annotations:
-    So that object mangled by DI are unaffected, no need to import DI in those modules.
-    It should function as helper for developer not as required component as far as used
-    classes are concerned.
-    ...and creates more problems to solve :)
-
-"""
-
 from glorpen.dic.exceptions import UnknownScopeException, UnknownServiceException, ScopeWideningException, ServiceAlreadyCreated,\
-    ContainerException
+    ContainerException, UnknownParameterException
 from glorpen.dic.scopes import ScopePrototype, ScopeSingleton, ScopeBase
 
 def fluid(f):
-    functools.wraps(f)
+    """Decorator for applying fluid pattern to class methods
+    and to disallow calling when instance is marked as frozen.
+    """
+    @functools.wraps(f)
     def wrapper(self, *args, **kwargs):
         if self._frozen:
             raise ServiceAlreadyCreated(self.name)
@@ -34,6 +25,18 @@ def fluid(f):
     return wrapper
 
 def normalize_name(o):
+    """Gets object "name" for use with :class:`.Container`.
+    
+    Args:
+        o (object): Object to get name for
+    
+    Returns:
+        str
+    
+    Raises:
+        Exception
+    
+    """
     if inspect.isclass(o) or inspect.isfunction(o):
         return "%s.%s" % (o.__module__, o.__qualname__)
     
@@ -43,6 +46,10 @@ def normalize_name(o):
     raise Exception("Unknown object: %r" % o)
 
 class Deffered(object):
+    """Class for marking values for lazy resolving.
+    
+    Values are resolved by :class:`.Container` upon service creation.
+    """
     def __init__(self, service=None, method=None, param=None):
         super(Deffered, self).__init__()
         self.service = service
@@ -50,6 +57,7 @@ class Deffered(object):
         self.param = param
     
     def resolve(self, getter, param_getter):
+        """Given (service) getter and param_getter, returns resolved value."""
         if self.service:
             svc = getter(self.service)
             if self.method:
@@ -62,9 +70,20 @@ class Deffered(object):
         raise Exception()
 
 class Service(object):
+    """Service definition.
     
-    SCOPE_SINGLETON = 'singleton'
-    SCOPE_PROTOTYPE = 'prototype'
+    When filling arguments for constructor and method calls you can use:
+    
+    - `my_var__svc=MyClass` - will inject service MyClass to `my_var`
+    - `my_var__param="my.param"` - will inject parameter named "my.param" to `my_var`
+    
+    Implementation value for service can be:
+    
+    - class instance
+    - string with import path
+    - callable
+    
+    """
     
     _impl = None
     _impl_getter = None
@@ -104,6 +123,7 @@ class Service(object):
         raise ContainerException("Bad implementation argument for %r service" % self.name)
     
     def _lazy_import(self, path):
+        """Wraps import path in callable returning class object"""
         module, cls = path.rsplit(".", 1)
         @functools.wraps(self._lazy_import)
         def wrapper(*args, **kwargs):
@@ -111,13 +131,27 @@ class Service(object):
         return wrapper
     
     def _deffer(self, ret=None, svc=None, method=None, param=None):
+        """Wraps value in :class:`.Deffered`. If *ret* argument is given it is returned unchanged."""
         if not ret is None:
             return ret
         elif svc or param:
             return Deffered(service=svc, method=method, param=param)
     
     @fluid
+    def implementation(self, v):
+        """Sets service implementation (callable).
+        
+        Returns:
+            :class:`.Service`
+        """
+        self._impl = v
+    
+    @fluid
     def factory(self, service=None, method=None, callable=None):
+        """Sets factory callable.
+        
+        Returns:
+            :class:`.Service`"""
         self._factory = self._deffer(svc=service, method=method, ret=callable)
     
     def _normalize_kwargs(self, kwargs):
@@ -133,22 +167,48 @@ class Service(object):
     
     @fluid
     def kwargs(self, **kwargs):
+        """Adds service constructor arguments.
+        
+        Returns:
+            :class:`.Service`"""
         self._kwargs.update(self._normalize_kwargs(kwargs))
     
     @fluid
     def call(self, method, **kwargs):
+        """Adds a method call after service creation with given arguments.
+        
+        Returns:
+            :class:`.Service`"""
         self._calls.append((False, method, self._normalize_kwargs(kwargs)))
     
     @fluid
     def call_with_signature(self, method, **kwargs):
+        """Adds a method call after service creation with given arguments.
+        Arguments detected from function signature are added if not already present.
+        
+        Returns:
+            :class:`.Service`"""
         self._calls.append((True, method, self._normalize_kwargs(kwargs)))
     
     @fluid
     def set(self, **kwargs):
+        """Will :func:`setattr` given arguments on service.
+        
+        Returns:
+            :class:`.Service`"""
         self._sets.update(self._normalize_kwargs(kwargs))
 
     @fluid
     def configurator(self, service=None, method=None, args_method=None, callable=None, args_callable=None):
+        """Adds service or callable as configurator of this service.
+        
+        Args:
+            service + method, callable: given service method/callable will be called with instance of this service.
+            service, args_method, args_callable: given service method/callable will be called with kwargs of this service constructor.
+        
+        Returns:
+            :class:`.Service`
+        """
         if method or callable:
             self._configurators.append(self._deffer(svc=service, method=method, ret=callable))
         if args_method or args_callable:
@@ -156,14 +216,24 @@ class Service(object):
 
     @fluid
     def kwargs_from_signature(self):
-        """adds arguments found in class signature, based on provided function hints"""
+        """Adds arguments found in class signature, based on provided function hints.
+        
+        Returns:
+            :class:`.Service`
+        """
         self._load_signature = True
 
     @fluid
     def scope(self, scope_cls):
+        """Sets service scope.
+        
+        Returns:
+            :class:`.Service`
+        """
         self._scope = scope_cls
     
 class Container(object):
+    """Implementation of DIC container."""
     
     scopes_cls = []
     scopes = []
@@ -178,7 +248,17 @@ class Container(object):
         self.set_scope_hierarchy(ScopeSingleton, ScopePrototype)
         
     def set_scope_hierarchy(self, *scopes):
-        """eg. ScopeSingleton, MyScopeApplication, MyScopeRequest, ScopePrototype"""  
+        """Sets used scopes hierarchy.
+        
+        Arguments should be scopes sorted from widest to narrowest.
+        A service in wider scope cannot request service from narrower one.
+        
+        Default is: [:class:`glorpen.dic.scopes.ScopeSingleton`, :class:`glorpen.dic.scopes.ScopePrototype`].
+        
+        Args:
+            instances of :class:`glorpen.dic.scopes.ScopeBase`
+        
+        """  
         my_scopes = []
         my_scopes_cls = []
         for scope in scopes:
@@ -193,23 +273,45 @@ class Container(object):
         self.scopes_cls = dict([(o,i) for i,o in enumerate(tuple(my_scopes_cls))])
     
     def add_service(self, name):
+        """Adds service definition to this container.
+        
+        *name* argument should be a class, import path, or string if :meth:`.Service.implementation` will be used.
+        
+        Returns:
+            :class:`.Service`
+        
+        """
         s = Service(name)
         self.services[s.name] = s
         return s
     
     def add_parameter(self, name, value):
+        """Adds a key-value parameter."""
         self.parameters[name] = value
     
     def get(self, svc):
+        """Gets service instance.
+        
+        Raises:
+            UnkownServiceException
+        
+        """
         return self._get(svc)
     
     def get_parameter(self, name):
+        """Gets parameter.
+        
+        Raises:
+            UnkownParameterException
+        
+        """
         if name in self.parameters:
             return self.parameters[name]
         else:
-            raise UnknownServiceException(name)
+            raise UnknownParameterException(name)
     
     def get_definition(self, svc):
+        """Returns definition for given service name."""
         name = normalize_name(svc)
         if not name in self.services:
             raise UnknownServiceException(name)

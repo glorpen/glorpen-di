@@ -1,10 +1,10 @@
-'''
-Created on 9 gru 2015
+'''Dependency injection component.
 
-@author: Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>
+.. moduleauthor:: Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>
+
 '''
 
 from glorpen.dic.dic import Container
 
-__version__ = "0.1"
+__version__ = "1.1"
 __all__ = ['Container', "__version__"]
