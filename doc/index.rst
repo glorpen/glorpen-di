@@ -1,17 +1,37 @@
+=====================
+Glorpen IOC Container
+=====================
 
-.. include:: ../README.rst
+Another Dependency Injection library for Python.
 
+This package has following three guidelines:
 
-Why not XML:
-    XML is bad(tm)
+- any class configured by *Container* mechanism should not be modified in any way
+- there is no need for external services definition files for *Container*
+- no *Container* compiling and service tagging - we have introspection and dynamic language for this task
 
-Why not annotations:
-    So that object mangled by DI are unaffected, no need to import DI in those modules.
-    It should function as helper for developer not as required component as far as used
-    classes are concerned.
-    ...and creates more problems to solve :)
+And so this package provides:
 
+- **no** xml configuration
+- **no** annotations (more cons than pros)
+- **no** changes to services code
 
+Supported design patterns
+=========================
+
+Service instance can be created by:
+
+- factory service
+- calling class object with arguments
+
+Instance options can be altered by:
+
+- constructor arguments
+- setters
+- calling methods
+- using configurator service
+
+Each service has defined scope, service cannot request other service from narrower scope.
 
 Contents
 ========
