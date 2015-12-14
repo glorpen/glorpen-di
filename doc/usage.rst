@@ -39,8 +39,8 @@ Using type hints for auto injection
 
 Sometimes it is easier to just auto-fill function arguments, when using Python3 it can be done by arguments type hinting (see :mod:`typing` for more information).
 
-You can enable function hints lookup by using :meth:`glorpen.di.dic.Service.kwargs_from_signature` for constructor arguments
-and :meth:`glorpen.di.dic.Service.call_with_signature` for methods.
+You can enable function hints lookup by using :meth:`glorpen.di.container.Service.kwargs_from_signature` for constructor arguments
+and :meth:`glorpen.di.container.Service.call_with_signature` for methods.
 
 .. code-block:: python
 
@@ -78,7 +78,7 @@ Adding custom scope
 -------------------
 
 You can define new scope by extending :class:`glorpen.di.scopes.ScopeBase`
-and using :meth:`glorpen.di.dic.Container.set_scope_hierarchy`.
+and using :meth:`glorpen.di.container.Container.set_scope_hierarchy`.
 
 .. code-block:: python
 
