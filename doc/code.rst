@@ -1,10 +1,10 @@
-:mod:`glorpen.dic` API Documentation
+:mod:`glorpen.di` API Documentation
 ************************************
 
-:mod:`glorpen.dic`
+:mod:`glorpen.di`
 ------------------
 
-.. automodule:: glorpen.dic
+.. automodule:: glorpen.di
    
    .. attribute:: __version__
    
@@ -12,29 +12,29 @@
 
    .. class:: Container
    
-      Alias to :class:`glorpen.dic.dic.Container`.
+      Alias to :class:`glorpen.di.dic.Container`.
 
-:mod:`glorpen.dic.dic`
+:mod:`glorpen.di.dic`
 ----------------------
 
-.. automodule:: glorpen.dic.dic
+.. automodule:: glorpen.di.dic
    :members:
 
-:mod:`glorpen.dic.scopes`
+:mod:`glorpen.di.scopes`
 -------------------------
 
-.. automodule:: glorpen.dic.scopes
+.. automodule:: glorpen.di.scopes
    :members:
 
-:mod:`glorpen.dic.exceptions`
+:mod:`glorpen.di.exceptions`
 -----------------------------
 
-.. automodule:: glorpen.dic.exceptions
+.. automodule:: glorpen.di.exceptions
    :members:
 
-:mod:`glorpen.dic.tests`
+:mod:`glorpen.di.tests`
 ------------------------
 
-.. automodule:: glorpen.dic.tests
+.. automodule:: glorpen.di.tests
    :members:
    

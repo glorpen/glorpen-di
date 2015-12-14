@@ -7,9 +7,9 @@ import inspect
 import functools
 import importlib
 
-from glorpen.dic.exceptions import UnknownScopeException, UnknownServiceException, ScopeWideningException, ServiceAlreadyCreated,\
+from glorpen.di.exceptions import UnknownScopeException, UnknownServiceException, ScopeWideningException, ServiceAlreadyCreated,\
     ContainerException, UnknownParameterException
-from glorpen.dic.scopes import ScopePrototype, ScopeSingleton, ScopeBase
+from glorpen.di.scopes import ScopePrototype, ScopeSingleton, ScopeBase
 
 def fluid(f):
     """Decorator for applying fluid pattern to class methods
@@ -253,10 +253,10 @@ class Container(object):
         Arguments should be scopes sorted from widest to narrowest.
         A service in wider scope cannot request service from narrower one.
         
-        Default is: [:class:`glorpen.dic.scopes.ScopeSingleton`, :class:`glorpen.dic.scopes.ScopePrototype`].
+        Default is: [:class:`glorpen.di.scopes.ScopeSingleton`, :class:`glorpen.di.scopes.ScopePrototype`].
         
         Args:
-            classes or instances of :class:`glorpen.dic.scopes.ScopeBase`
+            classes or instances of :class:`glorpen.di.scopes.ScopeBase`
         
         """  
         my_scopes = []

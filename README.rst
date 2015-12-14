@@ -16,6 +16,16 @@ And so this package provides:
 - **no** annotations (more cons than pros)
 - **no** changes to services code
 
+Official repositories
+=====================
+
+For forking and other funnies.
+
+BitBucket: https://bitbucket.org/glorpen/glorpenpropelbundle - main repo
+
+GitHub: https://github.com/glorpen/GlorpenPropelBundle
+
+
 Supported design patterns
 =========================
 
@@ -38,7 +48,7 @@ Injecting services and parameters
 
 .. code-block:: python
 
-   from glorpen.dic import Container
+   from glorpen.di import Container
    
    class MyParamService(object):
        pass

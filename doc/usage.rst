@@ -6,7 +6,7 @@ Injecting services and parameters
 
 .. code-block:: python
 
-   from glorpen.dic import Container
+   from glorpen.di import Container
    
    class MyParamService(object):
        pass
@@ -39,12 +39,12 @@ Using type hints for auto injection
 
 Sometimes it is easier to just auto-fill function arguments, when using Python3 it can be done by arguments type hinting (see :mod:`typing` for more information).
 
-You can enable function hints lookup by using :meth:`glorpen.dic.dic.Service.kwargs_from_signature` for constructor arguments
-and :meth:`glorpen.dic.dic.Service.call_with_signature` for methods.
+You can enable function hints lookup by using :meth:`glorpen.di.dic.Service.kwargs_from_signature` for constructor arguments
+and :meth:`glorpen.di.dic.Service.call_with_signature` for methods.
 
 .. code-block:: python
 
-   from glorpen.dic import Container
+   from glorpen.di import Container
    
    class MyParamService(object):
        pass
@@ -77,12 +77,12 @@ Snippet will create following output:
 Adding custom scope
 -------------------
 
-You can define new scope by extending :class:`glorpen.dic.scopes.ScopeBase`
-and using :meth:`glorpen.dic.dic.Container.set_scope_hierarchy`.
+You can define new scope by extending :class:`glorpen.di.scopes.ScopeBase`
+and using :meth:`glorpen.di.dic.Container.set_scope_hierarchy`.
 
 .. code-block:: python
 
-   from glorpen.dic.scopes import ScopePrototype, ScopeSingleton, ScopeBase
+   from glorpen.di.scopes import ScopePrototype, ScopeSingleton, ScopeBase
    from random import randint
    
    class RandomScope(ScopeBase):

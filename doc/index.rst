@@ -16,6 +16,16 @@ And so this package provides:
 - **no** annotations (more cons than pros)
 - **no** changes to services code
 
+Official repositories
+=====================
+
+For forking and other funnies.
+
+BitBucket: https://bitbucket.org/glorpen/glorpen-di
+
+GitHub: https://github.com/glorpen/glorpen-di
+
+
 Supported design patterns
 =========================
 

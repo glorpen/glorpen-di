@@ -5,9 +5,9 @@
 '''
 import unittest
 
-from glorpen.dic import Container
-from glorpen.dic.scopes import ScopeSingleton, ScopePrototype
-from glorpen.dic.exceptions import ScopeWideningException,\
+from glorpen.di import Container
+from glorpen.di.scopes import ScopeSingleton, ScopePrototype
+from glorpen.di.exceptions import ScopeWideningException,\
     UnknownServiceException, ServiceAlreadyCreated
 
 class Test(unittest.TestCase):
