@@ -9,19 +9,15 @@ import functools
 import importlib
 
 from glorpen.di.exceptions import UnknownScopeException, UnknownServiceException, ScopeWideningException, ServiceAlreadyCreated,\
-    ContainerException, UnknownParameterException, DisabledException
+    ContainerException, UnknownParameterException
 from glorpen.di.scopes import ScopePrototype, ScopeSingleton, ScopeBase
-import sys
 
-_has_arguments_hinting_support = sys.hexversion >= 0x03000000 and hasattr(inspect, "signature")
-
-def assert_signature_support(f):
-    @functools.wraps(f)
-    def wrapper(*args, **kwargs):
-        if not _has_arguments_hinting_support:
-            raise DisabledException("Your Python version does not support argument type hinting syntax")
-        return f(*args, **kwargs)
-    return wrapper
+try:
+    from inspect import signature
+    signature_empty = inspect.Parameter.empty
+except ImportError:
+    from funcsigs import signature
+    from funcsigs import _empty as signature_empty
 
 def fluid(f):
     """Decorator for applying fluid pattern to class methods
@@ -367,19 +363,16 @@ class Container(object):
         return self.scopes[scope_index].get(service_creator, name)
     
     def _update_kwargs_from_signature(self, function, kwargs):
-        
-        if not _has_arguments_hinting_support:
-            return
-        
         try:
-            sig = inspect.signature(function)
+            sig = signature(function)
         except ValueError:
             return
         
         for name, param in tuple(sig.parameters.items()):
             if name == "self":
                 continue
-            if param.annotation is inspect.Parameter.empty:
+            
+            if param.annotation is signature_empty:
                 continue
             n = normalize_name(param.annotation)
             if n in self.services:
