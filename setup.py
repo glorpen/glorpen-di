@@ -17,7 +17,7 @@ with open("%s/README.rst" % root_dir, "rt") as f:
     long_description = f.read()
 
 setup (
-  name = 'glorpenlibs_dic',
+  name = 'glorpen-di',
   version = version,
   packages = ["glorpen.di"],
   package_dir = {'': 'src'},
