@@ -21,9 +21,9 @@ Official repositories
 
 For forking and other funnies.
 
-BitBucket: https://bitbucket.org/glorpen/glorpenpropelbundle - main repo
+BitBucket: https://bitbucket.org/glorpen/glorpen-di
 
-GitHub: https://github.com/glorpen/GlorpenPropelBundle
+GitHub: https://github.com/glorpen/glorpen-di
 
 
 Supported design patterns
