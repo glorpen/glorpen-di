@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''Dependency injection component.
 
 .. moduleauthor:: Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>

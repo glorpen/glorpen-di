@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
 
 .. moduleauthor:: Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>
@@ -8,8 +9,19 @@ import functools
 import importlib
 
 from glorpen.di.exceptions import UnknownScopeException, UnknownServiceException, ScopeWideningException, ServiceAlreadyCreated,\
-    ContainerException, UnknownParameterException
+    ContainerException, UnknownParameterException, DisabledException
 from glorpen.di.scopes import ScopePrototype, ScopeSingleton, ScopeBase
+import sys
+
+_has_arguments_hinting_support = sys.hexversion >= 0x03000000
+
+def assert_signature_support(f):
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        if not _has_arguments_hinting_support:
+            raise DisabledException("Your Python version does not support argument type hinting syntax")
+        return f(*args, **kwargs)
+    return wrapper
 
 def fluid(f):
     """Decorator for applying fluid pattern to class methods
@@ -38,7 +50,7 @@ def normalize_name(o):
     
     """
     if inspect.isclass(o) or inspect.isfunction(o):
-        return "%s.%s" % (o.__module__, o.__qualname__)
+        return "%s.%s" % (o.__module__, o.__name__)
     
     if isinstance(o, str):
         return o
@@ -355,6 +367,10 @@ class Container(object):
         return self.scopes[scope_index].get(service_creator, name)
     
     def _update_kwargs_from_signature(self, function, kwargs):
+        
+        if not _has_arguments_hinting_support:
+            return
+        
         try:
             sig = inspect.signature(function)
         except ValueError:

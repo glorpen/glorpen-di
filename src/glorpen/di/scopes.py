@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''Built-in scopes.
 
 .. moduleauthor:: Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>
