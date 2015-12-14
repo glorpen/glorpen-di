@@ -78,4 +78,4 @@ Running snippet will print:
 
 
 
-**See http://glorpen-di.pythonhosted.org for code examples and more documentation.**
+**See https://pythonhosted.org/glorpen-di/ for code examples and more documentation.**
