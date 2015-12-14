@@ -256,7 +256,7 @@ class Container(object):
         Default is: [:class:`glorpen.dic.scopes.ScopeSingleton`, :class:`glorpen.dic.scopes.ScopePrototype`].
         
         Args:
-            instances of :class:`glorpen.dic.scopes.ScopeBase`
+            classes or instances of :class:`glorpen.dic.scopes.ScopeBase`
         
         """  
         my_scopes = []
@@ -334,7 +334,6 @@ class Container(object):
         if not my_scope in self.scopes_cls:
             raise UnknownScopeException(my_scope, s_def)
         
-        
         scope_index = self.scopes_cls[my_scope]
         
         if not requester_chain:
@@ -356,7 +355,11 @@ class Container(object):
         return self.scopes[scope_index].get(service_creator, name)
     
     def _update_kwargs_from_signature(self, function, kwargs):
-        sig = inspect.signature(function)
+        try:
+            sig = inspect.signature(function)
+        except ValueError:
+            return
+        
         for name, param in tuple(sig.parameters.items()):
             if name == "self":
                 continue

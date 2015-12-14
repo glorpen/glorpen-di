@@ -5,3 +5,4 @@ syntax: regexp
 /__pycache__$
 ^build$
 ^dist$
+^doc/_build$
