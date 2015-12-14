@@ -13,7 +13,7 @@ from glorpen.di.exceptions import UnknownScopeException, UnknownServiceException
 from glorpen.di.scopes import ScopePrototype, ScopeSingleton, ScopeBase
 import sys
 
-_has_arguments_hinting_support = sys.hexversion >= 0x03000000
+_has_arguments_hinting_support = sys.hexversion >= 0x03000000 and hasattr(inspect, "signature")
 
 def assert_signature_support(f):
     @functools.wraps(f)

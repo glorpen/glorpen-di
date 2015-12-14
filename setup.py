@@ -43,6 +43,7 @@ setup (
     'Programming Language :: Python :: 3.5',
     'Topic :: Software Development :: Libraries',
   ],
+  test_suite = "glorpen.di.tests",
   command_options = {
     "bdist_wheel": {
         "universal": ["setup.py", 1]
