@@ -87,9 +87,9 @@ qthelp:
 	@echo
 	@echo "Build finished; now you can run "qcollectiongenerator" with the" \
 	      ".qhcp project file in $(BUILDDIR)/qthelp, like this:"
-	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/glorpen-dic.qhcp"
+	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/glorpen-di.qhcp"
 	@echo "To view the help file:"
-	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/glorpen-dic.qhc"
+	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/glorpen-di.qhc"
 
 applehelp:
 	$(SPHINXBUILD) -b applehelp $(ALLSPHINXOPTS) $(BUILDDIR)/applehelp
@@ -104,8 +104,8 @@ devhelp:
 	@echo
 	@echo "Build finished."
 	@echo "To view the help file:"
-	@echo "# mkdir -p $$HOME/.local/share/devhelp/glorpen-dic"
-	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/glorpen-dic"
+	@echo "# mkdir -p $$HOME/.local/share/devhelp/glorpen-di"
+	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/glorpen-di"
 	@echo "# devhelp"
 
 epub:
