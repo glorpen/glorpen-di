@@ -9,7 +9,8 @@ import unittest
 from glorpen.di import Container
 from glorpen.di.scopes import ScopeSingleton, ScopePrototype
 from glorpen.di.exceptions import ScopeWideningException,\
-    UnknownServiceException, ServiceAlreadyCreated
+    UnknownServiceException, ServiceAlreadyCreated, RecursionException
+from glorpen.di.container import Kwargs
 
 class ImportableService(object):
     pass
@@ -18,32 +19,31 @@ class Test2(unittest.TestCase):
     
     def testConfigurator(self):
         c = Container()
+        c.add_parameter('some.param', 'some_param')
         
         class MyConfigurator(object):
-            def configure(self, o):
+            def configure(self, o, param1):
                 o.configured = True
+                o.param1 = param1
             
-            def configure_args(self, kwargs):
-                kwargs["o"] = "configured o"
+            def configure_inject(self, o, param1):
+                o.param_inject = param1
         
         class MyClass(object):
             
             configured = False
-            
-            def __init__(self, o):
-                super(MyClass, self).__init__()
-                self.o = o
-            
-            def is_configured(self):
-                return self.configured
+            param1 = None
+            param_inject = None
             
         c.add_service(MyConfigurator)
         c.add_service(MyClass)\
-            .configurator(service=MyConfigurator, method="configure", args_method="configure_args")
+            .configurator(service=MyConfigurator, method="configure", param1="param1")\
+            .configurator(service=MyConfigurator, method="configure_inject", param1__param="some.param")\
         
         o = c.get(MyClass)
-        self.assertEqual(o.o, "configured o", "configure object")
-        self.assertTrue(o.is_configured(), "configure constructor kwargs")
+        self.assertTrue(o.configured, "configure constructor kwargs")
+        self.assertEqual(o.param1, "param1", "pass parameter from configurator")
+        self.assertEqual(o.param_inject, "some_param", "pass injected parameter from configurator")
     
     def testFactory(self):
     
@@ -111,7 +111,14 @@ class Test2(unittest.TestCase):
         c = Container()
         with self.assertRaises(UnknownServiceException):
             c.get(str)
-        
+    
+    def testRecursion(self):
+        c = Container()
+        class MyClass(object): pass
+        c.add_service(MyClass).kwargs(obj__svc=MyClass)
+        with self.assertRaises(RecursionException, msg="throw exception when self referencing service is found"):
+            c.get(MyClass)
+    
     def testSetters(self):
         class MyClass(object):
             a="b"
@@ -156,3 +163,20 @@ class Test2(unittest.TestCase):
     def testSelfService(self):
         c = Container()
         self.assertIs(c.get(Container), c)
+    
+    def testKwargs(self):
+        class MyClass(object):
+            a_param = b_param = None
+            def a(self, param):
+                self.a_param = param
+            def b(self, param):
+                self.b_param = param
+        c = Container()
+        svc = c.add_service(MyClass)
+        svc.call("a", param="param1")
+        svc.call("b", Kwargs(param="param2"))
+        
+        o = c.get(MyClass)
+        
+        self.assertEqual(o.a_param, "param1", "simple param")
+        self.assertEqual(o.b_param, "param2", "kwargs helper param")
