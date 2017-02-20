@@ -77,6 +77,23 @@ class Deffered(object):
         
         raise Exception()
 
+class Kwargs(object):
+    def __init__(self, **kwargs):
+        super(Kwargs, self).__init__()
+        self.kwargs = kwargs
+    
+    @classmethod
+    def merge(cls, *args):
+        ret = {}
+        for arg in args:
+            if arg is None:
+                continue
+            if isinstance(arg, cls):
+                arg = arg.kwargs
+            ret.update(arg)
+        
+        return ret
+
 class Service(object):
     """Service definition.
     
@@ -155,14 +172,15 @@ class Service(object):
         self._impl = v
     
     @fluid
-    def factory(self, service=None, method=None, callable=None):
+    def factory(self, service=None, method=None, callable=None, kwargs=None, **kwargs_inline):
         """Sets factory callable.
         
         Returns:
             :class:`.Service`"""
-        self._factory = self._deffer(svc=service, method=method, ret=callable)
+        self._factory = (self._deffer(svc=service, method=method, ret=callable), self._normalize_kwargs(kwargs_inline, kwargs))
     
-    def _normalize_kwargs(self, kwargs):
+    def _normalize_kwargs(self, *args):
+        kwargs = Kwargs.merge(*args)
         kw = {}
         for k,v in kwargs.items():
             if k.endswith("__svc"):
@@ -182,21 +200,21 @@ class Service(object):
         self._kwargs.update(self._normalize_kwargs(kwargs))
     
     @fluid
-    def call(self, method, **kwargs):
+    def call(self, method, kwargs=None, **kwargs_inline):
         """Adds a method call after service creation with given arguments.
         
         Returns:
             :class:`.Service`"""
-        self._calls.append((False, method, self._normalize_kwargs(kwargs)))
+        self._calls.append((False, method, self._normalize_kwargs(kwargs_inline, kwargs)))
     
     @fluid
-    def call_with_signature(self, method, **kwargs):
+    def call_with_signature(self, method, kwargs=None, **kwargs_inline):
         """Adds a method call after service creation with given arguments.
         Arguments detected from function signature are added if not already present.
         
         Returns:
             :class:`.Service`"""
-        self._calls.append((True, method, self._normalize_kwargs(kwargs)))
+        self._calls.append((True, method, self._normalize_kwargs(kwargs_inline, kwargs)))
     
     @fluid
     def set(self, **kwargs):
@@ -207,20 +225,17 @@ class Service(object):
         self._sets.update(self._normalize_kwargs(kwargs))
 
     @fluid
-    def configurator(self, service=None, method=None, args_method=None, callable=None, args_callable=None):
+    def configurator(self, service=None, method=None, callable=None, kwargs=None, **kwargs_inline):
         """Adds service or callable as configurator of this service.
         
         Args:
             service + method, callable: given service method/callable will be called with instance of this service.
-            service, args_method, args_callable: given service method/callable will be called with kwargs of this service constructor.
         
         Returns:
             :class:`.Service`
         """
         if method or callable:
-            self._configurators.append(self._deffer(svc=service, method=method, ret=callable))
-        if args_method or args_callable:
-            self._args_configurators.append(self._deffer(svc=service, method=args_method, ret=args_callable))
+            self._configurators.append((self._deffer(svc=service, method=method, ret=callable), self._normalize_kwargs(kwargs_inline, kwargs)))
 
     @fluid
     def kwargs_from_signature(self):
@@ -387,11 +402,13 @@ class Container(object):
             return dict([(k, resolver(v)) for k,v in kwargs.items()])
         
         if s_def._factory:
-            cls = resolver(s_def._factory)
+            cls = resolver(s_def._factory[0])
+            kwargs = s_def._factory[1]
         else:
             cls = s_def._get_implementation()
+            kwargs = {}
         
-        kwargs = dict(s_def._kwargs)
+        kwargs.update(s_def._kwargs)
         self._update_kwargs_from_signature(cls.__init__, kwargs)
         kwargs = resolve_kwargs(kwargs)
         
@@ -400,8 +417,8 @@ class Container(object):
         
         instance = cls(**kwargs)
         
-        for conf in s_def._configurators:
-            resolver(conf)(instance)
+        for conf, params in s_def._configurators:
+            resolver(conf)(instance, **resolve_kwargs(params))
         
         for k,v in resolve_kwargs(s_def._sets).items():
             setattr(instance, k, v)
