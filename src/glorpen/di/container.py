@@ -9,7 +9,7 @@ import functools
 import importlib
 
 from glorpen.di.exceptions import UnknownScopeException, UnknownServiceException, ScopeWideningException, ServiceAlreadyCreated,\
-    ContainerException, UnknownParameterException
+    ContainerException, UnknownParameterException, RecursionException
 from glorpen.di.scopes import ScopePrototype, ScopeSingleton, ScopeBase
 
 try:
@@ -368,6 +368,8 @@ class Container(object):
         
         def resolver(value):
             if isinstance(value, Deffered):
+                if s_def in requester_chain:
+                    raise RecursionException(s_def, requester_chain)
                 return value.resolve(lambda name:self._get(name, requester_chain + [s_def]), self.get_parameter)
             else:
                 return value
