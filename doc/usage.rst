@@ -34,8 +34,65 @@ Running snippet will print:
    container parameter: value from container
    provided value: defined value
 
+Arguments
+---------
+
+In cases when you want to use inject parameter already used by internal methods, eg. :meth:`glorpen.di.container.Service.call`,
+you can pass args with :class:`glorpen.di.container.Kwargs` helper class.
+
+.. code-block:: python
+
+   svc.configurator(callable=configurator, kwargs=Kwargs(router__svc=Router), other_param="param")
+   svc.call("some_method", kwargs=Kwargs(router__svc=Router), other_param="param")
+
+Arguments defined by :class:`glorpen.di.container.Kwargs` are overriding ones provided by `**kwargs` notation. 
+
+Configurators
+-------------
+
+Configurators are services or callables used to configure main service.
+Provided callables are given main service instance as first argument.
+
+.. code-block:: python
+
+   def configurator(obj, some_service):
+      obj.some_thing = some_service()
+   svc.configurator(callable=configurator, some_service__svc=MyClass)
+   svc.configurator(service=ConfiguratorClass, method="some_method", some_service__svc=MyClass)
+
+Factories
+---------
+
+Services that create other objects. It is possible to provide parameters/other services from Container to given callables.
+
+.. code-block:: python
+
+   def factory(some_service):
+      return some_service("arg1")
+   svc1.factory(callable=factory, some_service__svc=MyClass)
+   
+   class FactoryClass(object):
+      def create_new(self, some_service):
+      return some_service("arg1")
+   svc2.factory(service=FactoryClass, method="create_new", some_service__svc=MyClass)
+
+Calling methods and settings properties
+---------------------------------------
+
+To call method on service creation:
+
+.. code-block:: python
+
+   svc.call("some_method", some_service__svc=MyClass)
+
+To set properties on service creation:
+
+.. code-block:: python
+
+   svc.set(my_prop__svc=MyClass)
+
 Using type hints for auto injection
------------------------------------
+***********************************
 
 Sometimes it is easier to just auto-fill function arguments, when using Python3 it can be done by arguments type hinting (see :mod:`typing` for more information).
 
@@ -75,7 +132,7 @@ Snippet will create following output:
 
 
 Adding custom scope
--------------------
+*******************
 
 You can define new scope by extending :class:`glorpen.di.scopes.ScopeBase`
 and using :meth:`glorpen.di.container.Container.set_scope_hierarchy`.

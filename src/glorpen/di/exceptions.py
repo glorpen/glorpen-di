@@ -40,7 +40,7 @@ class ServiceAlreadyCreated(ContainerException):
         super(ServiceAlreadyCreated, self).__init__("Service %r is already created and could be in active use" % (svc_name,))
 
 class RecursionException(ContainerException):
-    """Raised when service definition is requiring itself, most commonly through dependencies."""
+    """Raised when service definition is requiring itself."""
     def __init__(self, s_def, requester_chain):
         super(RecursionException, self).__init__(
              "Dependency recursion error, chain was: %s"

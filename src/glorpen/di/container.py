@@ -78,12 +78,16 @@ class Deffered(object):
         raise Exception()
 
 class Kwargs(object):
+    """Simply wraps given kwargs for later use."""
     def __init__(self, **kwargs):
         super(Kwargs, self).__init__()
         self.kwargs = kwargs
     
     @classmethod
     def merge(cls, *args):
+        """Merges iterable arguments, can be `dict` or :class:`.Kwargs` instance.
+        @return: Resulting dict
+        """
         ret = {}
         for arg in args:
             if arg is None:
