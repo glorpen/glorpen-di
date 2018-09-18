@@ -4,6 +4,8 @@ Glorpen IOC Container
 
 .. image:: https://travis-ci.org/glorpen/glorpen-di.svg?branch=master
 
+.. image:: https://readthedocs.org/projects/glorpen-di/badge/?version=latest
+
 Another Dependency Injection library for Python.
 
 This package has following three guidelines:
