@@ -1,8 +1,0 @@
-syntax: regexp
-^\.[a-z]*project$
-^\.settings$
-\.egg-info$
-/__pycache__$
-^build$
-^dist$
-^doc/_build$
