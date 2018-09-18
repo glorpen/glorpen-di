@@ -180,3 +180,13 @@ class Test2(unittest.TestCase):
         
         self.assertEqual(o.a_param, "param1", "simple param")
         self.assertEqual(o.b_param, "param2", "kwargs helper param")
+    
+    def testAliases(self):
+        c = Container()
+        
+        class MyClass(object):
+            pass
+        
+        c.add_service(MyClass)
+        c.add_alias(MyClass, 'alias-test')
+        self.assertIsInstance(c.get('alias-test'), MyClass)

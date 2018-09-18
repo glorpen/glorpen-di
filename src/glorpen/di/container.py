@@ -9,7 +9,7 @@ import functools
 import importlib
 
 from glorpen.di.exceptions import UnknownScopeException, UnknownServiceException, ScopeWideningException, ServiceAlreadyCreated,\
-    ContainerException, UnknownParameterException, RecursionException
+    ContainerException, UnknownParameterException, RecursionException, InvalidAliasTargetException
 from glorpen.di.scopes import ScopePrototype, ScopeSingleton, ScopeBase
 
 try:
@@ -258,7 +258,13 @@ class Service(object):
             :class:`.Service`
         """
         self._scope = scope_cls
-    
+
+class Alias(object):
+    """Alias for service."""
+    def __init__(self, target):
+        super(Alias, self).__init__()
+        self.target = normalize_name(target)
+        
 class Container(object):
     """Implementation of DIC container."""
     
@@ -312,6 +318,14 @@ class Container(object):
         self.services[s.name] = s
         return s
     
+    def add_alias(self, service, alias):
+        """Adds an alias for given service"""
+        a = Alias(service)
+        if not a.target in self.services or not isinstance(self.services[a.target], Service):
+            raise InvalidAliasTargetException(a.target)
+        self.services[alias] = a
+        return a
+    
     def add_parameter(self, name, value):
         """Adds a key-value parameter."""
         self.parameters[name] = value
@@ -345,6 +359,12 @@ class Container(object):
         
         return self.services[name]
     
+    def _get_service_definition(self, name):
+        s = self.services.get(name)
+        if hasattr(s, "target"):
+            return self.services.get(s.target)
+        return s
+    
     def _get(self, svc, requester_chain=None):
         name = normalize_name(svc)
         
@@ -354,7 +374,7 @@ class Container(object):
         if not name in self.services:
             raise UnknownServiceException(name)
         
-        s_def = self.services.get(name)
+        s_def = self._get_service_definition(name)
         
         my_scope = s_def._scope
         

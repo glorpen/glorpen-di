@@ -46,3 +46,11 @@ class RecursionException(ContainerException):
              "Dependency recursion error, chain was: %s"
              % (" => ".join([i.name for i in requester_chain] + [s_def.name]))
         )
+
+class InvalidAliasTargetException(ContainerException):
+    """Raised when adding alias to alias or not exisiting service"""
+    def __init__(self, name):
+        super(InvalidAliasTargetException, self).__init__(
+            "Service %r does not exists or is an alias"
+            % name
+        )
