@@ -8,9 +8,7 @@ import inspect
 import functools
 import importlib
 
-from glorpen.di.exceptions import UnknownScopeException, UnknownServiceException, ScopeWideningException, ServiceAlreadyCreated,\
-    ContainerException, UnknownParameterException, RecursionException, InvalidAliasTargetException,\
-    InjectionException
+from glorpen.di import exceptions
 from glorpen.di.scopes import ScopePrototype, ScopeSingleton, ScopeBase
 
 try:
@@ -27,7 +25,7 @@ def fluid(f):
     @functools.wraps(f)
     def wrapper(self, *args, **kwargs):
         if self._frozen:
-            raise ServiceAlreadyCreated(self.name)
+            raise exceptions.ServiceAlreadyCreated(self.name)
         else:
             f(self, *args, **kwargs)
         return self
@@ -150,7 +148,7 @@ class Service(object):
             self._impl = self._impl_getter()
             return self._impl
         
-        raise ContainerException("Bad implementation argument for %r service" % self.name)
+        raise exceptions.ContainerException("Bad implementation argument for %r service" % self.name)
     
     def _lazy_import(self, path):
         """Wraps import path in callable returning class object"""
@@ -323,7 +321,7 @@ class Container(object):
         """Adds an alias for given service"""
         a = Alias(service)
         if not a.target in self.services or not isinstance(self.services[a.target], Service):
-            raise InvalidAliasTargetException(a.target)
+            raise exceptions.InvalidAliasTargetException(a.target)
         self.services[alias] = a
         return a
     
@@ -350,13 +348,13 @@ class Container(object):
         if name in self.parameters:
             return self.parameters[name]
         else:
-            raise UnknownParameterException(name)
+            raise exceptions.UnknownParameterException(name)
     
     def get_definition(self, svc):
         """Returns definition for given service name."""
         name = normalize_name(svc)
         if not name in self.services:
-            raise UnknownServiceException(name)
+            raise exceptions.UnknownServiceException(name)
         
         return self.services[name]
     
@@ -373,14 +371,14 @@ class Container(object):
             return self
         
         if not name in self.services:
-            raise UnknownServiceException(name)
+            raise exceptions.UnknownServiceException(name)
         
         s_def = self._get_service_definition(name)
         
         my_scope = s_def._scope
         
         if not my_scope in self.scopes_cls:
-            raise UnknownScopeException(my_scope, s_def)
+            raise exceptions.UnknownScopeException(my_scope, s_def)
         
         scope_index = self.scopes_cls[my_scope]
         
@@ -389,12 +387,12 @@ class Container(object):
         else:
             requester_scope = requester_chain[-1]._scope
             if requester_scope and scope_index > self.scopes_cls[requester_scope]:
-                raise ScopeWideningException(s_def, requester_chain)
+                raise exceptions.ScopeWideningException(s_def, requester_chain)
         
         def resolver(value):
             if isinstance(value, Deffered):
                 if s_def in requester_chain:
-                    raise RecursionException(s_def, requester_chain)
+                    raise exceptions.RecursionException(s_def, requester_chain)
                 return value.resolve(lambda name:self._get(name, requester_chain + [s_def]), self.get_parameter)
             else:
                 return value
@@ -445,7 +443,7 @@ class Container(object):
         try:
             instance = cls(**kwargs)
         except Exception as e:
-            raise InjectionException(s_def.name, cls) from e
+            raise exceptions.InjectionException(s_def.name, cls) from e
         
         for conf, params in s_def._configurators:
             resolver(conf)(instance, **resolve_kwargs(params))
@@ -462,6 +460,6 @@ class Container(object):
             try:
                 callable(**resolve_kwargs(kwargs))
             except Exception as e:
-                raise InjectionException(s_def.name, cls, call_method) from e
+                raise exceptions.InjectionException(s_def.name, cls, call_method) from e
         
         return instance
