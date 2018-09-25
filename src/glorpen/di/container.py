@@ -9,7 +9,8 @@ import functools
 import importlib
 
 from glorpen.di.exceptions import UnknownScopeException, UnknownServiceException, ScopeWideningException, ServiceAlreadyCreated,\
-    ContainerException, UnknownParameterException, RecursionException, InvalidAliasTargetException
+    ContainerException, UnknownParameterException, RecursionException, InvalidAliasTargetException,\
+    InjectionException
 from glorpen.di.scopes import ScopePrototype, ScopeSingleton, ScopeBase
 
 try:
@@ -264,7 +265,7 @@ class Alias(object):
     def __init__(self, target):
         super(Alias, self).__init__()
         self.target = normalize_name(target)
-        
+
 class Container(object):
     """Implementation of DIC container."""
     
@@ -441,7 +442,10 @@ class Container(object):
         for conf in s_def._args_configurators:
             resolver(conf)(kwargs)
         
-        instance = cls(**kwargs)
+        try:
+            instance = cls(**kwargs)
+        except Exception as e:
+            raise InjectionException(s_def.name, cls) from e
         
         for conf, params in s_def._configurators:
             resolver(conf)(instance, **resolve_kwargs(params))
@@ -454,6 +458,10 @@ class Container(object):
             kwargs = dict(call_kwargs)
             if use_sig:
                 self._update_kwargs_from_signature(callable, kwargs)
-            callable(**resolve_kwargs(kwargs))
+            
+            try:
+                callable(**resolve_kwargs(kwargs))
+            except Exception as e:
+                raise InjectionException(s_def.name, cls, call_method) from e
         
         return instance
