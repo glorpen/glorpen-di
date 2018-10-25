@@ -9,7 +9,7 @@ class ContainerException(Exception):
     """Base exception"""
     pass
 
-class InjectionException(Exception):
+class InjectionException(ContainerException):
     """Raised when service or its method cannot be created or called"""
     def __init__(self, svc_name, cls, method_name=None):
         args = [svc_name, cls.__module__, cls.__name__]

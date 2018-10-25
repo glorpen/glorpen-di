@@ -7,6 +7,7 @@
 import inspect
 import functools
 import importlib
+import six
 
 from glorpen.di import exceptions
 from glorpen.di.scopes import ScopePrototype, ScopeSingleton, ScopeBase
@@ -336,7 +337,10 @@ class Container(object):
             UnkownServiceException
         
         """
-        return self._get(svc)
+        try:
+            return self._get(svc)
+        except exceptions.ContainerException as e:
+            six.reraise(e.__class__, e)
     
     def get_parameter(self, name):
         """Gets parameter.
