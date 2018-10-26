@@ -447,7 +447,7 @@ class Container(object):
         try:
             instance = cls(**kwargs)
         except Exception as e:
-            raise exceptions.InjectionException(s_def.name, cls) from e
+            six.raise_from(exceptions.InjectionException(s_def.name, cls), e)
         
         for conf, params in s_def._configurators:
             resolver(conf)(instance, **resolve_kwargs(params))
@@ -464,6 +464,6 @@ class Container(object):
             try:
                 callable(**resolve_kwargs(kwargs))
             except Exception as e:
-                raise exceptions.InjectionException(s_def.name, cls, call_method) from e
+                six.raise_from(exceptions.InjectionException(s_def.name, cls, call_method), e)
         
         return instance

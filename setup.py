@@ -24,7 +24,7 @@ setup (
   version = version,
   packages = ['glorpen.di'],
   package_dir = {'': 'src'},
-  install_requires = requires + ['six'],
+  install_requires = requires + ['six>=1.9'],
   dependency_links = [],
   namespace_packages  = ['glorpen'],
   author = 'Arkadiusz Dzięgiel',
