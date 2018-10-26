@@ -7,5 +7,5 @@
 
 from glorpen.di.container import Container, Kwargs
 
-__version__ = "1.3.2"
+__version__ = "1.4.0"
 __all__ = ['Container', 'Kwargs', '__version__']
