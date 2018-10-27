@@ -115,7 +115,7 @@ class Service(object):
     """
     
     _impl = None
-    _impl_getter = None
+    _name_or_impl = None
     
     _factory = None
     _scope = ScopeSingleton
@@ -123,7 +123,7 @@ class Service(object):
     
     _frozen = False
     
-    def __init__(self, name_or_impl, impl=None):
+    def __init__(self, name_or_impl):
         super(Service, self).__init__()
         
         self._kwargs = {}
@@ -133,21 +133,16 @@ class Service(object):
         self._args_configurators = []
         
         self.name = normalize_name(name_or_impl)
-        
-        if impl:
-            self._impl = impl
-        else:
-            if callable(name_or_impl):
-                self._impl = name_or_impl
-            else:
-                self._impl_getter = self._lazy_import(name_or_impl)
+        self._name_or_impl = name_or_impl
     
     def _get_implementation(self):
         if self._impl:
             return self._impl
-        if self._impl_getter:
-            self._impl = self._impl_getter()
-            return self._impl
+        
+        if callable(self._name_or_impl):
+            return self._name_or_impl
+        else:
+            return self._lazy_import(self._name_or_impl)()
         
         raise exceptions.ContainerException("Bad implementation argument for %r service" % self.name)
     
