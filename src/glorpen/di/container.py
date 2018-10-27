@@ -130,7 +130,7 @@ class Service(object):
         self._sets = {}
         self._calls = []
         self._configurators = []
-        self._args_configurators = []
+        self._kwargs_modifiers = []
         
         self.name = normalize_name(name_or_impl)
         self._name_or_impl = name_or_impl
@@ -235,6 +235,19 @@ class Service(object):
         """
         if method or callable:
             self._configurators.append((self._deffer(svc=service, method=method, ret=callable), self._normalize_kwargs(kwargs_inline, kwargs)))
+
+    @fluid
+    def kwargs_modifier(self, service=None, method=None, callable=None, kwargs=None, **kwargs_inline):
+        """Adds service or callable as constructor arguments modifier of this service.
+        
+        Args:
+            service + method, callable: given service method/callable will be called with kwargs of this service.
+        
+        Returns:
+            :class:`.Service`
+        """
+        if method or callable:
+            self._kwargs_modifiers.append((self._deffer(svc=service, method=method, ret=callable), self._normalize_kwargs(kwargs_inline, kwargs)))
 
     @fluid
     def kwargs_from_signature(self):
@@ -436,8 +449,8 @@ class Container(object):
         self._update_kwargs_from_signature(cls.__init__, kwargs)
         kwargs = resolve_kwargs(kwargs)
         
-        for conf in s_def._args_configurators:
-            resolver(conf)(kwargs)
+        for conf, params in s_def._kwargs_modifiers:
+            resolver(conf)(kwargs, **resolve_kwargs(params))
         
         try:
             instance = cls(**kwargs)
