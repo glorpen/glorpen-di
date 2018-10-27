@@ -190,3 +190,12 @@ class Test2(unittest.TestCase):
         c.add_service(MyClass)
         c.add_alias(MyClass, 'alias-test')
         self.assertIsInstance(c.get('alias-test'), MyClass)
+    
+    def testServiceImplementation(self):
+        c = Container()
+        class MyClass(object):
+            pass
+        
+        c.add_service("some:service").implementation(MyClass)
+        self.assertIsInstance(c.get("some:service"), MyClass)
+    
