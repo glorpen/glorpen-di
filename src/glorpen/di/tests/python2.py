@@ -199,3 +199,10 @@ class Test2(unittest.TestCase):
         c.add_service("some:service").implementation(MyClass)
         self.assertIsInstance(c.get("some:service"), MyClass)
     
+    def testKwargsModifiers(self):
+        c = Container()
+        class MyClass():
+            def __init__(self, **kwargs):
+                self.kwargs = kwargs
+        c.add_service(MyClass).kwargs_modifier(callable=lambda kwargs: kwargs.update(example="test"))
+        self.assertEqual(c.get(MyClass).kwargs.get("example"), "test", "kwargs are modified by callable")
